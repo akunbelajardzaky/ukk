@@ -1,0 +1,154 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String          @id @default(cuid())
+  name          String?
+  email         String          @unique
+  emailVerified DateTime?
+  password      String?         // Add this field for password hashes
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  Authenticator Authenticator[]
+  images        Image[]         // Relasi ke model Image
+  likes         Like[]          // Relasi ke model Like
+  albums        Album[]         // Relasi ke model Album
+  comments      Comment[]       // Relasi ke model Comment
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// Optional for WebAuthn support
+model Authenticator {
+  credentialID         String  @unique
+  userId               String
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, credentialID])
+}
+
+// Model untuk upload gambar
+model Image {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  tags        String   // Simpan tags sebagai string yang dipisahkan koma
+  imageUrl    String   // URL gambar di Cloudinary
+  progress    Int      // Persentase progress upload (0-100)
+  userId      String   // ID user yang mengupload
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes       Like[]   // Relasi ke model Like
+  comments    Comment[] // Relasi ke model Comment
+  albumImages AlbumImage[] // Relasi ke model AlbumImage
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Model untuk like
+model Like {
+  id        String   @id @default(cuid())
+  userId    String   // ID user yang melakukan like
+  imageId   String   // ID gambar yang di-like
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  image     Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, imageId]) // Satu user hanya bisa like satu gambar sekali
+}
+
+// Model untuk album
+model Album {
+  id          String   @id @default(cuid())
+  title       String   // Judul album
+  description String   // Deskripsi album
+  userId      String   // ID user yang membuat album
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  albumImages AlbumImage[] // Relasi ke model AlbumImage
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Model untuk menghubungkan album dan gambar
+model AlbumImage {
+  id        String   @id @default(cuid())
+  albumId   String   // ID album
+  imageId   String   // ID gambar
+  album     Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
+  image     Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([albumId, imageId]) // Satu gambar hanya bisa ada di satu album sekali
+}
+
+// Model untuk komentar
+model Comment {
+  id        String   @id @default(cuid())
+  content   String   // Isi komentar
+  userId    String   // ID user yang membuat komentar
+  imageId   String   // ID gambar yang dikomentari
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  image     Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
