@@ -1,3 +1,110 @@
+// generator client {
+//   provider = "prisma-client-js"
+// }
+
+// datasource db {
+//   provider = "mysql"
+//   url      = env("DATABASE_URL")
+// }
+
+// model account {
+//   userId            String
+//   type              String
+//   provider          String
+//   providerAccountId String
+//   refresh_token     String?
+//   access_token      String?
+//   expires_at        Int?
+//   token_type        String?
+//   scope             String?
+//   id_token          String?
+//   session_state     String?
+//   createdAt         DateTime @default(now())
+//   updatedAt         DateTime
+//   user              user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Account_userId_fkey")
+
+//   @@id([provider, providerAccountId])
+//   @@index([userId], map: "Account_userId_fkey")
+// }
+
+// model authenticator {
+//   credentialID         String  @unique(map: "Authenticator_credentialID_key")
+//   userId               String
+//   providerAccountId    String
+//   credentialPublicKey  String
+//   counter              Int
+//   credentialDeviceType String
+//   credentialBackedUp   Boolean
+//   transports           String?
+//   user                 user    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Authenticator_userId_fkey")
+
+//   @@id([userId, credentialID])
+// }
+
+// model session {
+//   sessionToken String   @unique(map: "Session_sessionToken_key")
+//   userId       String
+//   expires      DateTime
+//   createdAt    DateTime @default(now())
+//   updatedAt    DateTime
+//   user         user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Session_userId_fkey")
+
+//   @@index([userId], map: "Session_userId_fkey")
+// }
+
+// model user {
+//   id            String   @id @default(uuid()) @unique
+//   name          String?
+//   email         String          @unique(map: "User_email_key")
+//   emailVerified DateTime?
+//   password      String?
+//   image         String?
+//   createdAt     DateTime        @default(now())
+//   updatedAt     DateTime
+//   account       account[]
+//   authenticator authenticator[]
+//   session       session[]
+//   todo          todo[]
+// }
+
+// model verificationtoken {
+//   identifier String
+//   token      String
+//   expires    DateTime
+
+//   @@id([identifier, token])
+// }
+
+// model todo {
+//   id                       Int           @id @default(autoincrement())
+//   userId                   String
+//   title                    String        @db.VarChar(255)
+//   description              String?       @db.Text
+//   status                   todo_status   @default(pending)
+//   priority                 todo_priority @default(medium)
+//   due_date                 DateTime?     @db.DateTime(0)
+//   createdAt                DateTime      @default(now())
+//   updatedAt                DateTime      @default(now())
+//   google_calendar_event_id String?
+//   user                     user          @relation(fields: [userId], references: [id], onDelete: Cascade, map: "todo_ibfk_1")
+
+//   @@index([userId], map: "Todo_userId_fkey")
+// }
+
+// enum todo_status {
+//   pending
+//   in_progress
+//   completed
+//   canceled
+// }
+
+// enum todo_priority {
+//   low
+//   medium
+//   high
+// }
+
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
@@ -18,9 +125,7 @@ model User {
   sessions      Session[]
   Authenticator Authenticator[]
   images        Image[]         // Relasi ke model Image
-  likes         Like[]          // Relasi ke model Like
-  albums        Album[]         // Relasi ke model Album
-  comments      Comment[]       // Relasi ke model Comment
+
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -91,64 +196,33 @@ model Image {
   progress    Int      // Persentase progress upload (0-100)
   userId      String   // ID user yang mengupload
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  likes       Like[]   // Relasi ke model Like
-  comments    Comment[] // Relasi ke model Comment
-  albumImages AlbumImage[] // Relasi ke model AlbumImage
+
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// Model untuk like
-model Like {
-  id        String   @id @default(cuid())
-  userId    String   // ID user yang melakukan like
-  imageId   String   // ID gambar yang di-like
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  image     Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
-  @@unique([userId, imageId]) // Satu user hanya bisa like satu gambar sekali
+model Task {
+  id          Int      @id @default(autoincrement())
+  text        String
+  description String?
+  priority    Priority
+  status      Status
+  date        DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
-// Model untuk album
-model Album {
-  id          String   @id @default(cuid())
-  title       String   // Judul album
-  description String   // Deskripsi album
-  userId      String   // ID user yang membuat album
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  albumImages AlbumImage[] // Relasi ke model AlbumImage
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
 }
 
-// Model untuk menghubungkan album dan gambar
-model AlbumImage {
-  id        String   @id @default(cuid())
-  albumId   String   // ID album
-  imageId   String   // ID gambar
-  album     Album    @relation(fields: [albumId], references: [id], onDelete: Cascade)
-  image     Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([albumId, imageId]) // Satu gambar hanya bisa ada di satu album sekali
-}
-
-// Model untuk komentar
-model Comment {
-  id        String   @id @default(cuid())
-  content   String   // Isi komentar
-  userId    String   // ID user yang membuat komentar
-  imageId   String   // ID gambar yang dikomentari
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  image     Image    @relation(fields: [imageId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum Status {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
 }

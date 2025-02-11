@@ -3,6 +3,8 @@
 import { signIn, signOut } from "@/auth";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
+import { randomUUID } from "crypto";
+import { now } from "lodash";
 
 const prisma = new PrismaClient();
 
@@ -49,6 +51,8 @@ export const register = async (email: string, password: string, name: string) =>
     // Create the user
     const user = await prisma.user.create({
       data: {
+        updatedAt: new Date(),
+        id: randomUUID() as string,
         email,
         password: hashedPassword,
         name,
