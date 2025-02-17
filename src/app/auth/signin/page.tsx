@@ -67,7 +67,7 @@ export default function SignInForm() {
               Don't have an account?{" "}
               <button
                 type="button"
-                onClick={() => router.push("/auth/register")}
+                onClick={() => router.push("/auth/signup")}
                 className="text-black hover:text-purple-800 font-semibold focus:outline-none"
               >
                 Register here

@@ -1,137 +1,13 @@
-// generator client {
-//   provider = "prisma-client-js"
-// }
-
-// datasource db {
-//   provider = "mysql"
-//   url      = env("DATABASE_URL")
-// }
-
-// model account {
-//   userId            String
-//   type              String
-//   provider          String
-//   providerAccountId String
-//   refresh_token     String?
-//   access_token      String?
-//   expires_at        Int?
-//   token_type        String?
-//   scope             String?
-//   id_token          String?
-//   session_state     String?
-//   createdAt         DateTime @default(now())
-//   updatedAt         DateTime
-//   user              user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Account_userId_fkey")
-
-//   @@id([provider, providerAccountId])
-//   @@index([userId], map: "Account_userId_fkey")
-// }
-
-// model authenticator {
-//   credentialID         String  @unique(map: "Authenticator_credentialID_key")
-//   userId               String
-//   providerAccountId    String
-//   credentialPublicKey  String
-//   counter              Int
-//   credentialDeviceType String
-//   credentialBackedUp   Boolean
-//   transports           String?
-//   user                 user    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Authenticator_userId_fkey")
-
-//   @@id([userId, credentialID])
-// }
-
-// model session {
-//   sessionToken String   @unique(map: "Session_sessionToken_key")
-//   userId       String
-//   expires      DateTime
-//   createdAt    DateTime @default(now())
-//   updatedAt    DateTime
-//   user         user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Session_userId_fkey")
-
-//   @@index([userId], map: "Session_userId_fkey")
-// }
-
-// model user {
-//   id            String   @id @default(uuid()) @unique
-//   name          String?
-//   email         String          @unique(map: "User_email_key")
-//   emailVerified DateTime?
-//   password      String?
-//   image         String?
-//   createdAt     DateTime        @default(now())
-//   updatedAt     DateTime
-//   account       account[]
-//   authenticator authenticator[]
-//   session       session[]
-//   todo          todo[]
-// }
-
-// model verificationtoken {
-//   identifier String
-//   token      String
-//   expires    DateTime
-
-//   @@id([identifier, token])
-// }
-
-// model todo {
-//   id                       Int           @id @default(autoincrement())
-//   userId                   String
-//   title                    String        @db.VarChar(255)
-//   description              String?       @db.Text
-//   status                   todo_status   @default(pending)
-//   priority                 todo_priority @default(medium)
-//   due_date                 DateTime?     @db.DateTime(0)
-//   createdAt                DateTime      @default(now())
-//   updatedAt                DateTime      @default(now())
-//   google_calendar_event_id String?
-//   user                     user          @relation(fields: [userId], references: [id], onDelete: Cascade, map: "todo_ibfk_1")
-
-//   @@index([userId], map: "Todo_userId_fkey")
-// }
-
-// enum todo_status {
-//   pending
-//   in_progress
-//   completed
-//   canceled
-// }
-
-// enum todo_priority {
-//   low
-//   medium
-//   high
-// }
-
+generator client {
+  provider = "prisma-client-js"
+}
 
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-model User {
-  id            String          @id @default(cuid())
-  name          String?
-  email         String          @unique
-  emailVerified DateTime?
-  password      String?         // Add this field for password hashes
-  image         String?
-  accounts      Account[]
-  sessions      Session[]
-  Authenticator Authenticator[]
-  images        Image[]         // Relasi ke model Image
-
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Account {
+model account {
   userId            String
   type              String
   provider          String
@@ -143,36 +19,16 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime
+  user              user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Account_userId_fkey")
 
   @@id([provider, providerAccountId])
+  @@index([userId], map: "Account_userId_fkey")
 }
 
-model Session {
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model VerificationToken {
-  identifier String
-  token      String
-  expires    DateTime
-
-  @@id([identifier, token])
-}
-
-// Optional for WebAuthn support
-model Authenticator {
-  credentialID         String  @unique
+model authenticator {
+  credentialID         String  @unique(map: "Authenticator_credentialID_key")
   userId               String
   providerAccountId    String
   credentialPublicKey  String
@@ -180,48 +36,76 @@ model Authenticator {
   credentialDeviceType String
   credentialBackedUp   Boolean
   transports           String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 user    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Authenticator_userId_fkey")
 
   @@id([userId, credentialID])
 }
 
-// Model untuk upload gambar
-model Image {
-  id          String   @id @default(cuid())
+model image {
+  id          String   @id
   title       String
   description String
-  tags        String   // Simpan tags sebagai string yang dipisahkan koma
-  imageUrl    String   // URL gambar di Cloudinary
-  progress    Int      // Persentase progress upload (0-100)
-  userId      String   // ID user yang mengupload
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags        String
+  imageUrl    String
+  progress    Int
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime
 
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@index([userId], map: "Image_userId_fkey")
 }
 
+model session {
+  sessionToken String   @unique(map: "Session_sessionToken_key")
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+  user         user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Session_userId_fkey")
 
+  @@index([userId], map: "Session_userId_fkey")
+}
 
-model Task {
-  id          Int      @id @default(autoincrement())
+model user {
+  id            String          @id
+  name          String?
+  email         String          @unique(map: "User_email_key")
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime
+  account       account[]
+  authenticator authenticator[]
+  session       session[]
+}
+
+model verificationtoken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+model task {
+  id          Int           @id @default(autoincrement())
   text        String
   description String?
-  priority    Priority
-  status      Status
+  priority    task_priority
+  status      task_status
   date        DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime      @default(now())
+  user_id     String        @db.VarChar(255)
 }
 
-enum Priority {
+enum task_priority {
   LOW
   MEDIUM
   HIGH
 }
 
-enum Status {
+enum task_status {
   NOT_STARTED
   IN_PROGRESS
   COMPLETED
