@@ -1,13 +1,12 @@
 "use server"
 
-import { ViewType } from '@/app/(proteced)/page';
 import { auth } from '@/auth';
 import { PrismaClient } from '@prisma/client'
 import { startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 
 const prisma = new PrismaClient()
 
-export async function getAllTasks(date: Date, view: ViewType) {
+export async function getAllTasks(date: Date, view: any, searchQuery: string) {
   const user = await auth();
   
   let startDate, endDate;
@@ -32,7 +31,10 @@ export async function getAllTasks(date: Date, view: ViewType) {
       date: {
         gte: startDate,
         lte: endDate,
-      }
+      },
+       OR: [
+        { text: { contains: searchQuery } },
+      ],
     }
   });
 }

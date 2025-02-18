@@ -8,7 +8,6 @@ import { revalidatePath } from "next/cache";
 // taskSchema.ts
 
 const prisma = new PrismaClient();
-
 export async function createTask(formData: FormData) {
   const parsedData = Object.fromEntries(formData.entries());
 
@@ -22,7 +21,22 @@ export async function createTask(formData: FormData) {
 
   // Here you can handle the task creation logic, e.g., saving to a database
   const task = result.data;
-  const ss = await prisma.task.create({
+
+  // Check if a task with the same name and date already exists
+  const existingTask = await prisma.task.findFirst({
+    where: {
+      text: task.title,
+      date: new Date(task.dueDate!),
+      user_id: user?.user?.id,
+    },
+  });
+
+  if (existingTask) {
+    throw new Error("A task with the same name already exists on the same date.");
+  }
+
+  // If no existing task, create a new one
+  const newTask = await prisma.task.create({
     data: {
       text: task.title,
       description: task.description,
@@ -32,7 +46,8 @@ export async function createTask(formData: FormData) {
       status: "NOT_STARTED",
     },
   });
-  console.log("Task sssssss:", ss);
+
+  console.log("Task created:", newTask);
   revalidatePath("/", "page");
   return task;
 }
@@ -66,6 +81,32 @@ export async function updateTask(taskId: number, formData: FormData) {
 
   const task = result.data;
 
+  // Ambil task yang sedang diupdate untuk mendapatkan user_id
+  const existingTask = await prisma.task.findUnique({
+    where: { id: taskId },
+  });
+
+  if (!existingTask) {
+    throw new Error("Task not found.");
+  }
+
+  // Cek apakah ada task lain dengan nama yang sama pada tanggal yang sama
+  const duplicateTask = await prisma.task.findFirst({
+    where: {
+      text: task.title,
+      date: new Date(task.dueDate!),
+      user_id: existingTask.user_id, // Pastikan hanya memeriksa task milik user yang sama
+      NOT: {
+        id: taskId, // Abaikan task yang sedang diupdate
+      },
+    },
+  });
+
+  if (duplicateTask) {
+    throw new Error("A task with the same name already exists on the same date.");
+  }
+
+  // Jika tidak ada duplikat, lakukan update
   await prisma.task.update({
     where: { id: taskId },
     data: {
