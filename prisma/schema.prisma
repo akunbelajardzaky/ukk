@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -21,7 +21,7 @@ model account {
   session_state     String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime
-  user              user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Account_userId_fkey")
+  user              user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Account_userId_fkey_unique")
 
   @@id([provider, providerAccountId])
   @@index([userId], map: "Account_userId_fkey")
@@ -61,7 +61,7 @@ model session {
   expires      DateTime
   createdAt    DateTime @default(now())
   updatedAt    DateTime
-  user         user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Session_userId_fkey")
+  user         user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Session_userId_fkey_unique")
 
   @@index([userId], map: "Session_userId_fkey")
 }
