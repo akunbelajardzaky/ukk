@@ -21,21 +21,19 @@ import { useEffect, useState } from "react";
     // Set timer to fade out
     const timer = setTimeout(() => {
       setVisible(false);
-    }, 1000); // Start fade slightly before 3s
+    }, 1400); // Start fade slightly before 3s
 
     return () => clearTimeout(timer);
   }, []);
 
   return visible ? (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-[#F2FCE2] transition-opacity duration-500 ${
+      className={`fixed inset-0 z-50 flex items-center justify-center bg-[#ffff] transition-opacity duration-500 ${
         visible ? "opacity-100" : "opacity-0"
       }`}
     >
       <div className="text-center animate-fade-in">
-        <span className="inline-block px-3 py-1 mb-4 text-sm font-medium text-[#8E9196] bg-white/80 backdrop-blur-sm rounded-full">
-          Welcome
-        </span>
+      
         <h1 className="text-4xl font-light text-[#8E9196] tracking-wide">
           {greeting}, <span className="font-normal">{name}</span>
         </h1>
