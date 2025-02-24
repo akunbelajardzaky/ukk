@@ -1,7 +1,6 @@
 "use client";
 
-import type React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   format,
@@ -39,6 +38,11 @@ import {
 import { CustomDatePicker } from "@/components/costom-datepicker";
 import { CustomSelect } from "@/components/costom-select";
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
+import { SignOutButton } from "@/components/sign-out-button";
+import { toast } from "sonner"; // Import Sonner toast
+import { logout } from "@/lib/actions/auth";
+import OpenAI from "openai"; // Import OpenAI library
+import Groq from "groq-sdk";
 
 type ViewType = "day" | "week" | "month" | "year" | "today";
 
@@ -48,6 +52,7 @@ export default function TaskManager() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // Loading state
   const formattedDate = format(currentDate, "yyyy-MM-dd");
   const { tasks, loading, refetch } = useTasks(currentDate, view, searchQuery);
 
@@ -82,13 +87,19 @@ export default function TaskManager() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true); // Set loading ke true
+
     const formData = new FormData(e.currentTarget);
     try {
       await createTask(formData);
       setIsModalOpen(false);
       refetch();
+      toast.success("Task created successfully!"); // Toast sukses
     } catch (err: any) {
       setError(err.message);
+      toast.error("Failed to create task"); // Toast error
+    } finally {
+      setIsLoading(false); // Set loading ke false
     }
   };
 
@@ -179,6 +190,7 @@ export default function TaskManager() {
           setIsModalOpen={setIsModalOpen}
           onSubmit={handleSubmit}
           error={error}
+          isLoading={isLoading} // Kirim isLoading ke TaskForm
         />
       </Modal>
 
@@ -206,10 +218,14 @@ const Sidebar = ({
   openModal: () => void;
 }) => (
   <div className="p-6 h-full flex flex-col">
+    {/* Header */}
     <h1 className="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-8">
       Quickly
     </h1>
+
+    {/* Navigation Menu */}
     <nav className="space-y-2 flex-1">
+      {/* Create Task Button */}
       <button
         className="w-full text-left py-3 px-4 rounded-xl transition-all duration-200 flex items-center bg-indigo-600 text-white shadow-lg hover:bg-indigo-700"
         onClick={openModal}
@@ -217,6 +233,8 @@ const Sidebar = ({
         <PlusCircle className="mr-3 h-5 w-5" />
         <span className="font-medium">Create task</span>
       </button>
+
+      {/* View Buttons (Day, Week, Month, Year) */}
       {(["day", "week", "month", "year"] as ViewType[]).map((v, index) => (
         <motion.button
           key={v}
@@ -238,9 +256,20 @@ const Sidebar = ({
         </motion.button>
       ))}
     </nav>
+
+    {/* Sign Out Button */}
+    <div className="mt-auto">
+      {" "}
+      {/* mt-auto untuk mendorong ke bawah */}
+      <button
+        onClick={() => logout()}
+        className="w-full text-left py-3 px-4 rounded-xl transition-all duration-200 flex items-center bg-red-600 text-white shadow-lg hover:bg-red-700"
+      >
+        SignOut
+      </button>
+    </div>
   </div>
 );
-
 const MobileSidebar = ({
   isOpen,
   onClose,
@@ -269,7 +298,7 @@ const MobileSidebar = ({
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+            className="p-2 rounded-xl bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
           >
             <X className="h-6 w-6" />
           </button>
@@ -346,6 +375,7 @@ const TaskItem = ({
 }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false); // Loading state untuk edit/delete
 
   const handleCheck = async () => {
     const newStatus = task.status === "COMPLETED" ? "NOT_STARTED" : "COMPLETED";
@@ -354,91 +384,114 @@ const TaskItem = ({
   };
 
   const handleDelete = async () => {
-    await deleteTask(task.id);
-    refetch();
+    setIsLoading(true); // Set loading ke true
+    try {
+      await deleteTask(task.id);
+      refetch();
+      toast.success("Task deleted successfully!"); // Toast sukses
+    } catch (err: any) {
+      toast.error("Failed to delete task"); // Toast error
+    } finally {
+      setIsLoading(false); // Set loading ke false
+    }
   };
 
   const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true); // Set loading ke true
+
     const formData = new FormData(e.currentTarget);
     try {
       await updateTask(task.id, formData);
       refetch();
       setIsEditModalOpen(false);
+      toast.success("Task updated successfully!"); // Toast sukses
     } catch (err: any) {
       setError(err.message);
+      toast.error("Failed to update task"); // Toast error
+    } finally {
+      setIsLoading(false); // Set loading ke false
     }
   };
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.2, delay: index * 0.1 }}
-      className="group bg-white dark:bg-gray-800 mb-4 rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 p-5 border border-gray-200 dark:border-gray-700"
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex items-start space-x-4">
-          <div className="mt-1">
-            <button onClick={handleCheck}>
-              {task.status === "COMPLETED" ? (
-                <CheckCircle className="h-5 w-5 text-green-500" />
-              ) : (
-                <Circle className="h-5 w-5 text-gray-400 group-hover:text-indigo-600 transition-colors" />
-              )}
-            </button>
-          </div>
-          <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
-              {task.text}
-            </h3>
-            {task.description && (
-              <p className="text-gray-500 dark:text-gray-400 mt-1">
-                {task.description}
-              </p>
-            )}
-          </div>
+    layout
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -20 }}
+    transition={{ duration: 0.2, delay: index * 0.1 }}
+    className="group bg-white dark:bg-gray-800 mb-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 p-4 sm:p-5 border border-gray-100 dark:border-gray-700"
+  >
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+      <div className="flex items-start space-x-3">
+        <button 
+          onClick={handleCheck}
+          className="mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded-full"
+        >
+          {task.status === "COMPLETED" ? (
+            <CheckCircle className="h-5 w-5 text-green-500" />
+          ) : (
+            <Circle className="h-5 w-5 text-gray-400 group-hover:text-indigo-600 transition-colors" />
+          )}
+        </button>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-medium text-gray-900 dark:text-white text-base sm:text-lg truncate">
+            {task.text}
+          </h3>
+          {task.description && (
+            <p className="text-gray-500 dark:text-gray-400 mt-0.5 text-sm line-clamp-2">
+              {task.description}
+            </p>
+          )}
         </div>
+      </div>
+      <div className="flex items-center sm:items-start flex-shrink-0">
         <PriorityBadge priority={task.priority} />
       </div>
-      <div className="mt-4 flex items-center justify-between">
-        <div className="flex items-center space-x-3 text-sm">
-          <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900 rounded-full text-indigo-600 dark:text-indigo-400 font-medium">
-            {task.status}
-          </span>
-          <span className="text-gray-500 dark:text-gray-400">
-            {format(new Date(task.date), "MMM d, yyyy")}
-          </span>
-        </div>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setIsEditModalOpen(true)}
-            className="px-3 py-1 bg-indigo-100 text-indigo-600 hover:bg-indigo-200 rounded-full transition-colors"
-          >
-            Edit
-          </button>
-          <button
-            onClick={handleDelete}
-            className="px-3 py-1 bg-red-100 text-red-600 hover:bg-red-200 rounded-full transition-colors"
-          >
-            Delete
-          </button>
-        </div>
-      </div>
+    </div>
 
-      {/* Edit Modal */}
-      <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
-        <TaskForm
-          setIsModalOpen={setIsEditModalOpen}
-          onSubmit={handleEditSubmit}
-          error={error}
-          initialData={task}
-        />
-      </Modal>
-    </motion.div>
+    <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="inline-flex items-center px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/50 rounded-full text-xs font-medium text-indigo-600 dark:text-indigo-300">
+          {task.status}
+        </span>
+        <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+          {format(new Date(task.date), "MMM d, yyyy")}
+        </span>
+      </div>
+      
+      <div className="flex items-center space-x-2 w-full sm:w-auto">
+        <button
+          onClick={() => setIsEditModalOpen(true)}
+          disabled={isLoading}
+          className="flex-1 sm:flex-none px-3 py-1.5 text-sm bg-indigo-50 text-indigo-600 hover:bg-indigo-100 
+          rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? "Editing..." : "Edit"}
+        </button>
+        <button
+          onClick={handleDelete}
+          disabled={isLoading}
+          className="flex-1 sm:flex-none px-3 py-1.5 text-sm bg-red-50 text-red-600 hover:bg-red-100 
+          rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isLoading ? "Deleting..." : "Delete"}
+        </button>
+      </div>
+    </div>
+
+    <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)}>
+      <TaskForm
+        setIsModalOpen={setIsEditModalOpen}
+        onSubmit={handleEditSubmit}
+        error={error}
+        isLoading={isLoading}
+        initialData={task}
+      />
+    </Modal>
+  </motion.div>
   );
 };
 
@@ -506,15 +559,20 @@ const TaskForm = ({
   error,
   initialData,
   setIsModalOpen,
+  isLoading,
 }: {
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   error: string;
   initialData?: any;
   setIsModalOpen: (value: boolean) => void;
+  isLoading: boolean;
 }) => {
   const [selectedDate, setSelectedDate] = useState(
     initialData?.date ? new Date(initialData.date) : new Date()
   );
+  const [title, setTitle] = useState(initialData?.text || ""); // State untuk judul
+  const [description, setDescription] = useState(initialData?.description || ""); // State untuk deskripsi
+  const [isSummarizing, setIsSummarizing] = useState(false); // State untuk loading summarization
 
   const priorityOptions = [
     { value: "LOW", label: "Low Priority" },
@@ -527,6 +585,39 @@ const TaskForm = ({
       ? priorityOptions.find((opt) => opt.value === initialData.priority)
       : null
   );
+
+  // Fungsi untuk memanggil API AI (DeepSeek atau OpenAI)
+  const handleSummarize = async () => {
+    if (!title) {
+      toast.error("Please fill in the title first.");
+      return;
+    }
+
+    setIsSummarizing(true); // Set loading summarization
+
+    try {
+      const openai = new OpenAI({ 
+        baseURL: "https://api.groq.com/openai/v1",
+        apiKey:'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', // Ambil API key dari environment variable
+        dangerouslyAllowBrowser: true, // Hanya untuk development, jangan digunakan di production
+      });
+
+      const prompt = `Summarize teks ini sesuai bahasa yang di masukan (summarize di gunakan untuk deskripsi tugas): "${title}"`;
+      const response = await openai.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+      });
+
+      const summary = response.choices[0].message.content;
+      setDescription(summary); // Set ringkasan ke textarea deskripsi
+      toast.success("Description summarized successfully!");
+    } catch (err) {
+      console.error("Summarization error:", err);
+      toast.error("Failed to summarize description.");
+    } finally {
+      setIsSummarizing(false); // Set loading summarization ke false
+    }
+  };
 
   return (
     <form
@@ -553,9 +644,10 @@ const TaskForm = ({
           <input
             name="title"
             type="text"
-            defaultValue={initialData?.text}
+            value={title} // Controlled input
+            onChange={(e) => setTitle(e.target.value)} // Update state judul
             placeholder="Enter task title"
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+            className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
             required
           />
         </div>
@@ -564,13 +656,28 @@ const TaskForm = ({
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Description
           </label>
+          {/* Tombol Summarize */}
+        
           <textarea
             name="description"
-            defaultValue={initialData?.description}
+            value={description} // Controlled input
+            onChange={(e) => setDescription(e.target.value)} // Update state deskripsi
             placeholder="Enter task description"
             rows={4}
-            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+            className="w-full px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
           />
+          <div className="justify-between flex"> 
+            <div />
+          <button
+            type="button"
+            onClick={handleSummarize}
+            disabled={!title || isSummarizing} // Disable jika judul kosong atau sedang loading
+            className="mb-2 px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isSummarizing ? "Summarizing..." : "Summarize Description"}
+          </button>
+
+          </div>
         </div>
 
         <div>
@@ -603,15 +710,16 @@ const TaskForm = ({
           <button
             type="button"
             onClick={() => setIsModalOpen(false)}
-            className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+            disabled={isLoading} // Nonaktifkan tombol saat loading
+            className="px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {initialData ? "Update Task" : "Create Task"}
+            {isLoading ? "Loading..." : initialData ? "Update Task" : "Create Task"}
           </button>
         </div>
       </div>

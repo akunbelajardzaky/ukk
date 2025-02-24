@@ -1,30 +1,41 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { motion } from "framer-motion"
-import { register } from "@/lib/actions/auth"
-import { useRouter } from "next/navigation"
-import { Mail, Lock, User, ChevronRight } from "lucide-react"
+import React, { useState } from "react"; // Import useState
+import { motion } from "framer-motion";
+import { register } from "@/lib/actions/auth";
+import { useRouter } from "next/navigation";
+import { Mail, Lock, User, ChevronRight } from "lucide-react";
+import { toast } from "sonner"; // Import toast dari Sonner
 
 export default function RegisterForm() {
-  const router = useRouter()
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false); // State untuk loading
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
-    const name = formData.get("name") as string
+    e.preventDefault();
+    setIsLoading(true); // Set loading ke true saat form di-submit
 
-    const result = await register(email, password, name)
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const name = formData.get("name") as string;
 
-    if (result?.error) {
-      alert(result.error)
-    } else {
-      alert("Registration successful! Please log in.")
-      router.push("/auth/signin") // Redirect to the sign-in page
+    try {
+      const result = await register(email, password, name);
+
+      if (result?.error) {
+        toast.error(result.error); // Ganti alert dengan toast.error
+      } else {
+        toast.success("Registration successful! Please log in."); // Tampilkan toast sukses
+        router.push("/auth/signin"); // Redirect ke halaman sign-in
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+      toast.error("An error occurred during registration"); // Tampilkan toast error
+    } finally {
+      setIsLoading(false); // Set loading ke false setelah proses selesai
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-gray-900 dark:to-indigo-900">
@@ -87,10 +98,13 @@ export default function RegisterForm() {
           <div>
             <button
               type="submit"
-              className="w-full bg-indigo-600 text-white py-2 px-4 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all flex items-center justify-center"
+              disabled={isLoading} // Nonaktifkan tombol saat loading
+              className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all flex items-center justify-center ${
+                isLoading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
-              Register
-              <ChevronRight className="ml-2" size={18} />
+              {isLoading ? "Loading..." : "Register"} {/* Tampilkan teks berbeda saat loading */}
+              {!isLoading && <ChevronRight className="ml-2" size={18} />}
             </button>
           </div>
           <div className="text-center">
@@ -108,6 +122,5 @@ export default function RegisterForm() {
         </form>
       </motion.div>
     </div>
-  )
+  );
 }
-

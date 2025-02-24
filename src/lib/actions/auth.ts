@@ -20,21 +20,30 @@ export const logout = async () => {
 
 // Email/password login
 export const loginWithCredentials = async (email: string, password: string) => {
-  const result = await signIn("credentials", {
-    email,
-    password,
-    redirect: false,
-  });
+  try {
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
 
-  if (result?.error) {
-    return { error: result.error };
+    if (result?.error) {
+      return { error: result.error };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Login error:", error);
+    return { error: "An error occurred during login" };
   }
-
-  return { success: true };
 };
 
 // User registration
-export const register = async (email: string, password: string, name: string) => {
+export const register = async (
+  email: string,
+  password: string,
+  name: string
+) => {
   try {
     // Check if the user already exists
     const existingUser = await prisma.user.findUnique({
@@ -51,7 +60,6 @@ export const register = async (email: string, password: string, name: string) =>
     // Create the user
     const user = await prisma.user.create({
       data: {
-        updatedAt: new Date(),
         id: randomUUID() as string,
         email,
         password: hashedPassword,

@@ -1,29 +1,41 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { motion } from "framer-motion"
-import { loginWithCredentials, login } from "@/lib/actions/auth"
-import { useRouter } from "next/navigation"
-import { FcGoogle } from "react-icons/fc"
-import { Mail, Lock, ChevronRight } from "lucide-react"
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { loginWithCredentials, login } from "@/lib/actions/auth";
+import { useRouter } from "next/navigation";
+import { FcGoogle } from "react-icons/fc";
+import { Mail, Lock, ChevronRight } from "lucide-react";
+import { toast } from "sonner"; // Import toast dari Sonner
 
 export default function SignInForm() {
-  const router = useRouter()
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    const formData = new FormData(e.currentTarget)
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
+    e.preventDefault();
+    setIsLoading(true);
 
-    const result = await loginWithCredentials(email, password)
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
-    if (result?.error) {
-      alert(result.error)
-    } else {
-      router.push("/") // Redirect to the home page after successful login
+    try {
+      const result = await loginWithCredentials(email, password);
+
+      if (result?.error) {
+        toast.error(result.error); // Ganti alert dengan toast.error
+      } else {
+        toast.success("Login successful!"); // Tampilkan toast sukses
+        router.push("/");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("An error occurred during login"); // Ganti alert dengan toast.error
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-purple-100 dark:from-gray-900 dark:to-indigo-900">
@@ -71,10 +83,13 @@ export default function SignInForm() {
           <div>
             <button
               type="submit"
-              className="w-full bg-indigo-600 text-white py-2 px-4 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all flex items-center justify-center"
+              disabled={isLoading}
+              className={`w-full bg-indigo-600 text-white py-2 px-4 rounded-xl hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all flex items-center justify-center ${
+                isLoading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
-              Sign In
-              <ChevronRight className="ml-2" size={18} />
+              {isLoading ? "Loading..." : "Sign In"}
+              {!isLoading && <ChevronRight className="ml-2" size={18} />}
             </button>
           </div>
           <div className="text-center">
@@ -104,15 +119,25 @@ export default function SignInForm() {
         {/* Google Button */}
         <button
           onClick={async () => {
-            await login() // Google OAuth login
+            setIsLoading(true);
+            try {
+              await login();
+              toast.success("Google login successful!"); // Tampilkan toast sukses
+            } catch (error) {
+              toast.error("Google login failed"); // Tampilkan toast error
+            } finally {
+              setIsLoading(false);
+            }
           }}
-          className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-600 transition-all"
+          disabled={isLoading}
+          className={`w-full flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl shadow-sm text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-600 transition-all ${
+            isLoading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
         >
           <FcGoogle className="w-5 h-5 mr-2" />
           Sign in with Google
         </button>
       </motion.div>
     </div>
-  )
+  );
 }
-

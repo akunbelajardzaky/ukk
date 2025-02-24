@@ -1,4 +1,5 @@
 import { auth } from "@/auth";
+import { WelcomeScreen } from "@/components/welcome";
 import { redirect } from "next/navigation";
 
 export default async function ProtectLayout({
@@ -14,5 +15,12 @@ export default async function ProtectLayout({
     redirect("/auth/signin");
   }
 
-  return children
+  return (
+    <>
+        <WelcomeScreen name={session.user?.name}/>
+
+        {children}
+
+    </>
+  )
 }

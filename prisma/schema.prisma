@@ -20,7 +20,6 @@ model account {
   id_token          String?
   session_state     String?
   createdAt         DateTime @default(now())
-  updatedAt         DateTime
   user              user     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Account_userId_fkey_unique")
 
   @@id([provider, providerAccountId])
@@ -67,14 +66,13 @@ model session {
 }
 
 model user {
-  id            String          @id
+  id            String          @id @default(uuid())
   name          String?
   email         String          @unique(map: "User_email_key")
   emailVerified DateTime?
   password      String?
   image         String?
   createdAt     DateTime        @default(now())
-  updatedAt     DateTime
   account       account[]
   authenticator authenticator[]
   session       session[]
