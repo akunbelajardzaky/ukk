@@ -602,7 +602,7 @@ const TaskForm = ({
         dangerouslyAllowBrowser: true, // Hanya untuk development, jangan digunakan di production
       });
 
-      const prompt = `Summarize teks ini sesuai bahasa yang di masukan (summarize di gunakan untuk deskripsi tugas): "${title}"`;
+      const prompt = `Summarize teks ini sesuai bahasa yang di masukan (summarize di gunakan untuk deskripsi tugas) contoh: (prompt: Lari pagi di lapangan karang, answer: Setelah subuh lari di lapangan karang dan minum susu sapi poang setelah dengan spotify): "${title}"`;
       const response = await openai.chat.completions.create({
         model: "llama-3.3-70b-versatile",
         messages: [{ role: "user", content: prompt }],

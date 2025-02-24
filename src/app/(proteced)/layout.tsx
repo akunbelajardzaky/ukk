@@ -17,7 +17,8 @@ export default async function ProtectLayout({
 
   return (
     <>
-        <WelcomeScreen name={session.user?.name}/>
+    {/* @ts-ignore */}
+        <WelcomeScreen name={session?.user?.name}/>
 
         {children}
 
