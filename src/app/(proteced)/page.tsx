@@ -38,11 +38,9 @@ import {
 import { CustomDatePicker } from "@/components/costom-datepicker";
 import { CustomSelect } from "@/components/costom-select";
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
-import { SignOutButton } from "@/components/sign-out-button";
 import { toast } from "sonner"; // Import Sonner toast
 import { logout } from "@/lib/actions/auth";
 import OpenAI from "openai"; // Import OpenAI library
-import Groq from "groq-sdk";
 
 type ViewType = "day" | "week" | "month" | "year" | "today";
 
@@ -227,7 +225,7 @@ const Sidebar = ({
     <nav className="space-y-2 flex-1">
       {/* Create Task Button */}
       <button
-        className="w-full text-left py-3 px-4 rounded-xl transition-all duration-200 flex items-center bg-indigo-600 text-white shadow-lg hover:bg-indigo-700"
+        className="w-full text-left mb-3 py-3 px-4 rounded-xl transition-all duration-200 flex items-center bg-indigo-600 text-white shadow-lg hover:bg-indigo-700"
         onClick={openModal}
       >
         <PlusCircle className="mr-3 h-5 w-5" />
@@ -255,6 +253,8 @@ const Sidebar = ({
           </span>
         </motion.button>
       ))}
+
+      
     </nav>
 
     {/* Sign Out Button */}
@@ -303,11 +303,13 @@ const MobileSidebar = ({
             <X className="h-6 w-6" />
           </button>
         </div>
+        
         <Sidebar
           view={view}
           handleViewChange={handleViewChange}
           openModal={openModal}
         />
+        
       </motion.div>
     )}
   </AnimatePresence>
